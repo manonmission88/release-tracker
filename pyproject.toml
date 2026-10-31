@@ -16,6 +16,14 @@ dependencies = [
 [tool.fastapi]
 entrypoint = "release_tracker.main:app"
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
