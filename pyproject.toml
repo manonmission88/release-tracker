@@ -1,0 +1,23 @@
+[project]
+name = "release-tracker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "manonmission88", email = "manishnewray88@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.20.1",
+    "fastapi[standard]>=0.115.0",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.16.2",
+    "sqlmodel>=0.0.48",
+]
+
+[tool.fastapi]
+entrypoint = "release_tracker.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
