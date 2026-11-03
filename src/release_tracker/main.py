@@ -5,7 +5,7 @@ from typing import Annotated
 from .database import get_session
 from sqlmodel import Session,select
 from .models import ProjectRead, Project, ProjectCreate, ProjectUpdate
-
+from sqlalchemy.exc import IntegrityError
 
 app = FastAPI(title = "Release Tracker API", description="An API for tracking project milestones and developer tasks")
 _seed_time  = datetime(2026,1,1,tzinfo=UTC)
@@ -71,8 +71,17 @@ def create_project(session: SessionDep,payload: ProjectCreate):
     # now add project to the session 
     # save to the database 
     # Calling refresh queries the database to populate our Python object with those new, database-generated values so we can return them to the client.
-    session.add(project)
-    session.commit()
+    # what if project already exists 
+    try:
+        session.add(project)
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Project name or slug already exists"
+        )
+        
     session.refresh(project)
     return project
 
@@ -90,7 +99,7 @@ Models:
 
 """
 @app.patch("/projects/{project_id}", response_model=ProjectRead)
-def update_project(session: SessionDep, project_id: int, payload=ProjectUpdate):
+def update_project(session: SessionDep, project_id: int, payload:ProjectUpdate):
      # Step 1: Fetch the existing project.
     project = session.get(Project,project_id)
     # Step 2: Return 404 if not found.
@@ -108,8 +117,24 @@ def update_project(session: SessionDep, project_id: int, payload=ProjectUpdate):
     session.commit()
     session.refresh(project)
     return project 
-    
-    
-    
+
+"""
+For delete we neeed which project id we are deleting 
+
+first we read from the database and delete that id from database if exist
+
+"""
+
+
+@app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(project_id: int, session: SessionDep):
+    project = session.get(Project, project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    session.delete(project)
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
                                     
 
