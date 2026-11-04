@@ -91,7 +91,7 @@ class Project(ProjectBase,table=True):
     id: int | None = Field(default=None,primary_key=True)
     slug: str = Field(unique=True)
     created_at: datetime = Field(default_factory=utc_now,sa_column=Column(DateTime(timezone=True),nullable = False))
-    task: list[Task] = Relationship(back_populates = "project") # making the relationship between task and project table
+    tasks: list[Task] = Relationship(back_populates="project")
     
 """
 
@@ -112,4 +112,3 @@ class ProjectRead(ProjectBase):
     id: int 
     slug: str 
     created_at: datetime
-
