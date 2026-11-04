@@ -27,8 +27,7 @@ def test_create_project():
 def test_alredy_existed_create_project():
     ## The database normally generates the project ID.
     response = client.post("/projects", json = {"name": "Middleware Apiiiiii", "description":"Middleware APII Project"})
-    print("Response",response.json())
-    assert response.json()["detail"] == "Project name or slug already exists"
+    assert response.status_code == 409
 
 def test_delete_project(client: TestClient):
     # Create a project inside the test database.
