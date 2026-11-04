@@ -1,15 +1,32 @@
 
 from datetime import UTC, datetime
 
-from fastapi import FastAPI, HTTPException, status, Depends, Response, Request
+from fastapi import FastAPI,  status,Request
 from fastapi.responses import JSONResponse
-from .models import ProjectRead, Project, ProjectCreate, ProjectUpdate
-from . import crud
-from .dependencies import ProjectDep, SessionDep
 from sqlalchemy.exc import IntegrityError
 from .routers import projects
+import logging
+from .config import configure_logging, get_settings
+# logging.basiscConfig(level = loggingInfo)
+#When your application runs, 
+# you need a way to know what requests arrived, what operations succeeded, and why something failed.
+configure_logging(debug = get_settings().debug)
+logger = logging.getLogger(__name__)
+"""
+Loggers use severity levels to filter messages. The standard levels, in increasing order of severity:
+
+DEBUG: Detailed diagnostic information.
+INFO: General operational events.
+WARNING: Something unexpected happened, but the application is still running.
+ERROR: A serious problem occurred, and a specific operation failed.
+CRITICAL: A fatal error that may cause the application to crash.
 
 
+"""
+
+logger.debug("Parsing request payload")
+logger.info("Project Created Succesfully")
+logger.warning('Rate Limit Approaching')
 
 app = FastAPI(
     title="Release Tracker API",
@@ -57,9 +74,11 @@ You'll also need to validate the slug doesn't already exist when updating and cr
 
 """
 
+
 # root route ("/")
 @app.get("/")
 def read_root() -> dict[str, str]:
+    # logger.info("TEST LOG: ROOT")
     return {
         "app": "Release Tracker API",
         "docs": "/docs",
