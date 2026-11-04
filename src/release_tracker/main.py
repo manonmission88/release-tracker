@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from .routers import projects
 import logging
 from .config import configure_logging, get_settings
+import time 
 # logging.basiscConfig(level = loggingInfo)
 #When your application runs, 
 # you need a way to know what requests arrived, what operations succeeded, and why something failed.
@@ -34,6 +35,30 @@ app = FastAPI(
 )
 
 _seed_time = datetime(2026, 1, 1, tzinfo=UTC)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = (time.perf_counter() - start_time) * 1000
+
+    logger.info(
+        "%s %s completed in %.2fms with status code %s",
+        request.method,
+        request.url.path,
+        process_time,
+        response.status_code,
+    )
+    return response
+
+# @app.middleware("http")
+# async def my_middleware(request: Request, call_next):
+#     # pre route work goes here 
+#     # BEFORE THe endpoint is called 
+#     response = await call_next(request)
+#     #post route work goes here 
+#     # AFTER THE ENDPOINT FINISHED 
+#     return response 
 
 # lets use the new router 
 app.include_router(projects.router)
