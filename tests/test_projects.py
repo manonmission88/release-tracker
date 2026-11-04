@@ -20,13 +20,13 @@ def test_get_project():
 
 def test_create_project():
     ## The database normally generates the project ID.
-    response = client.post("/projects", json = {"name": "Middleware Apiii", "description":"Middleware APII Project"})
+    response = client.post("/projects", json = {"name": "Middleware Apiiiii", "description":"Middleware APII Project"})
     print("Response",response.json())
     assert response.status_code == 409
 
 def test_alredy_existed_create_project():
     ## The database normally generates the project ID.
-    response = client.post("/projects", json = {"name": "Middleware Apiii", "description":"Middleware APII Project"})
+    response = client.post("/projects", json = {"name": "Middleware Apiiiiii", "description":"Middleware APII Project"})
     print("Response",response.json())
     assert response.json()["detail"] == "Project name or slug already exists"
 

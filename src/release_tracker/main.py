@@ -5,7 +5,8 @@ from typing import Annotated
 from .database import get_session
 from sqlmodel import Session,select
 from .models import ProjectRead, Project, ProjectCreate, ProjectUpdate
-from sqlalchemy.exc import IntegrityError
+from . import crud
+
 
 app = FastAPI(title = "Release Tracker API", description="An API for tracking project milestones and developer tasks")
 _seed_time  = datetime(2026,1,1,tzinfo=UTC)
@@ -27,21 +28,20 @@ You'll also need to validate the slug doesn't already exist when updating and cr
 
 """
 
-def slugify(value: str)->str:
-    cleaned = "".join(c for c in value.lower() if c.isalnum() or c == " ")
-    return "-".join(cleaned.split()) or "project"
-
+# root route ("/")
+@app.get("/")
+def read_root() -> dict[str,str]:
+    return {
+        "app": "Release Tracker API",
+        "docs": "/docs",
+        "health": "/health"
+    }
+    
+    
 @app.get("/projects", response_model=list[ProjectRead])
 def list_projects(session: SessionDep):
-
-    # Express which database records we want.
-    statement = select(Project).order_by(Project.name)
-
-    # Use the injected session to retrieve them.
-    projects = session.exec(statement).all()
-
     # Let FastAPI validate and serialize the response.
-    return list(projects)
+    return crud.list_projects(session)
 
 # that for the project path 
 # now with the query parameter 
@@ -52,7 +52,7 @@ We use that None return to raise an HTTP 404 in the route.
 @app.get("/projects/{project_id}", response_model= ProjectRead)
 def get_project(project_id: int, session: SessionDep):
     # now do the query 
-    project = session.get(Project,project_id)
+    project = crud.get_project(session,project_id)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Project Not Found")
     return project
@@ -67,23 +67,7 @@ and commit to the database
 @app.post("/projects", response_model=ProjectRead, status_code = status.HTTP_201_CREATED)
 def create_project(session: SessionDep,payload: ProjectCreate):
     # Create a database model
-    project= Project.model_validate(payload,update ={"slug" : slugify(payload.name)})
-    # now add project to the session 
-    # save to the database 
-    # Calling refresh queries the database to populate our Python object with those new, database-generated values so we can return them to the client.
-    # what if project already exists 
-    try:
-        session.add(project)
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Project name or slug already exists"
-        )
-        
-    session.refresh(project)
-    return project
+    return crud.create_project(session,payload)
 
 """
 Updating the database 
@@ -101,21 +85,12 @@ Models:
 @app.patch("/projects/{project_id}", response_model=ProjectRead)
 def update_project(session: SessionDep, project_id: int, payload:ProjectUpdate):
      # Step 1: Fetch the existing project.
-    project = session.get(Project,project_id)
+    project = crud.update_project(session,payload)
     # Step 2: Return 404 if not found.
     if not project:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,detail = "Project Not Found")
     # Step 3: Extract ONLY fields supplied by client.
     #exclude_unset=True ensures we only update fields the client explicitly sent in their request.
-    updated_fields = payload.model_dump(exclude_unset=True)
-    # Step 4: Regenerate slug when name changes.
-    if "name" in updated_fields:
-        updated_fields["slug"] = slugify(updated_fields["name"])
-        
-    #update the database
-    session.add(project)
-    session.commit()
-    session.refresh(project)
     return project 
 
 """
@@ -128,13 +103,12 @@ first we read from the database and delete that id from database if exist
 
 @app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(project_id: int, session: SessionDep):
-    project = session.get(Project, project_id)
+    project = crud.get_project(session,project_id) 
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
-    session.delete(project)
-    session.commit()
+    crud.delete_project(session,project)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
                                     
 
