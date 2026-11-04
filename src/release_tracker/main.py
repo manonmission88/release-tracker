@@ -1,25 +1,36 @@
 from datetime import UTC, datetime
 
-from fastapi import FastAPI, HTTPException, status, Depends, Response
-from typing import Annotated
-from .database import get_session
-from sqlmodel import Session,select
+from fastapi import FastAPI, HTTPException, status, Depends, Response, Request
+from fastapi.responses import JSONResponse
 from .models import ProjectRead, Project, ProjectCreate, ProjectUpdate
 from . import crud
+from .dependencies import ProjectDep
+from sqlalchemy.exc import IntegrityError
 
 
 app = FastAPI(title = "Release Tracker API", description="An API for tracking project milestones and developer tasks")
 _seed_time  = datetime(2026,1,1,tzinfo=UTC)
 # Declare a reusable requirement:
 # "This endpoint needs a database session."
-SessionDep = Annotated[Session, Depends(get_session)]
-
 # Expose a public endpoint that returns ProjectRead objects.
 """
 By specifying response_model=list[ProjectRead], FastAPI automatically takes the Project database models returned by session.exec(), validates them against our ProjectRead schema, and serializes them to JSON. 
 We don't have to map the fields ourselves.
 
 """
+
+"""
+FastAPI's @app.exception_handler() decorator solves both problems.
+It registers a function that runs whenever a specific exception type bubbles up out of a route, dependency, or anywhere else inside a request. 
+Routes stay focused on the happy path, crud.py stays free of HTTP knowledge, and the conversion to a 409 happens in one place.
+
+"""
+@app.exception_handler(IntegrityError)
+def handle_integrity_error(request: Request, exc: IntegrityError):
+    return JSONResponse(
+        status_code = status.HTTP_409_CONFLICT,
+        content = {"detail": "Data Conflict occured (e.g Duplicate Entry)"}
+    )
 # our project model requires unique slug -> that we will use as part of the URL 
 # helper function to create the unique slug 
 """
@@ -37,11 +48,6 @@ def read_root() -> dict[str,str]:
         "health": "/health"
     }
     
-    
-@app.get("/projects", response_model=list[ProjectRead])
-def list_projects(session: SessionDep):
-    # Let FastAPI validate and serialize the response.
-    return crud.list_projects(session)
 
 # that for the project path 
 # now with the query parameter 
@@ -50,12 +56,16 @@ session.get(Model, primary_key) returns the matching row, or None if no row matc
 We use that None return to raise an HTTP 404 in the route.
 """
 @app.get("/projects/{project_id}", response_model= ProjectRead)
-def get_project(project_id: int, session: SessionDep):
-    # now do the query 
-    project = crud.get_project(session,project_id)
-    if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Project Not Found")
+def get_project(project: ProjectDep):
     return project
+
+
+@app.get("/projects", response_model=list[ProjectRead])
+def list_projects(project: ProjectDep):
+    # Let FastAPI validate and serialize the response.
+    return crud.list_projects(project)
+
+
 
 
 """
@@ -65,9 +75,9 @@ and commit to the database
 - use post decorator for this 
 """
 @app.post("/projects", response_model=ProjectRead, status_code = status.HTTP_201_CREATED)
-def create_project(session: SessionDep,payload: ProjectCreate):
+def create_project(project: ProjectDep,payload: ProjectCreate):
     # Create a database model
-    return crud.create_project(session,payload)
+    return crud.create_project(project,payload)
 
 """
 Updating the database 
@@ -83,9 +93,9 @@ Models:
 
 """
 @app.patch("/projects/{project_id}", response_model=ProjectRead)
-def update_project(session: SessionDep, project_id: int, payload:ProjectUpdate):
+def update_project(project: ProjectDep, project_id: int, payload:ProjectUpdate):
      # Step 1: Fetch the existing project.
-    project = crud.update_project(session,payload)
+    project = crud.update_project(project,payload)
     # Step 2: Return 404 if not found.
     if not project:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND,detail = "Project Not Found")
@@ -102,13 +112,9 @@ first we read from the database and delete that id from database if exist
 
 
 @app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project(project_id: int, session: SessionDep):
-    project = crud.get_project(session,project_id) 
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-    crud.delete_project(session,project)
+def delete_project(project_id: int, project: ProjectDep):
+    project = crud.get_project(project,project_id) 
+    crud.delete_project(ProjectDep,project)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
                                     
 
