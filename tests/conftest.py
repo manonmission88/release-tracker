@@ -19,6 +19,9 @@ dependency_overrides	Makes FastAPI use the test session
 yield	Provides the fixture and enables cleanup afterward
 
 """
+#The fixture in tests/conftest.py gives every test its own clean SQLite instance, 
+# an isolated Session, a TestClient wired to override the production session,
+# and a few of pre-populated rows for tests that need a starting state.
 
 @pytest.fixture
 def session():
@@ -44,10 +47,37 @@ def client(session):
     def override_get_session():
         yield session
 
-    app.dependency_overrides[get_session] = override_get_session
-
+    app.dependency_overrides[get_session] = override_get_session # just duplicate the session 
     try:
         with TestClient(app) as test_client:
             yield test_client
     finally:
         app.dependency_overrides.pop(get_session, None)
+
+#boiler plate code 
+@pytest.fixture()
+def sample_project_id(client: TestClient) -> int:
+    response = client.post(
+        "/projects/",
+        json={
+            "name": "Release Platform",
+            "description": "Coordinates planning for the production release.",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
+
+
+@pytest.fixture()
+def sample_task_id(client: TestClient, sample_project_id: int) -> int:
+    response = client.post(
+        f"/projects/{sample_project_id}/tasks",
+        json={
+            "title": "Wire up the dashboard",
+            "details": "Connect the API to the static frontend.",
+            "status": "planned",
+            "priority": "medium",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
