@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from fastapi import FastAPI,  status,Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
-from .routers import projects
+from .routers import projects,tasks
 import logging
 from .config import configure_logging, get_settings
 import time 
@@ -34,7 +34,8 @@ app = FastAPI(
     description="An API for tracking project milestones and developer tasks"
 )
 
-_seed_time = datetime(2026, 1, 1, tzinfo=UTC)
+app.include_router(projects.router)
+app.include_router(tasks.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -60,8 +61,6 @@ async def log_requests(request: Request, call_next):
 #     # AFTER THE ENDPOINT FINISHED 
 #     return response 
 
-# lets use the new router 
-app.include_router(projects.router)
 
 # Declare a reusable requirement:
 # "This endpoint needs a database session."

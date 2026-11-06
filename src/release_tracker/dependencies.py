@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException,status
 from sqlmodel import Session 
 from .database import get_session 
 from . import crud 
-from .models import Project
+from .models import Project, Task
 """
 
 Whenever an API endpoint needs a database session, FastAPI should automatically create or obtain one using get_session() and provide it to that endpoint.
@@ -41,3 +41,15 @@ def get_project_404(session:SessionDep, project_id: int)-> Project :
     
 
 ProjectDep = Annotated[Project, Depends(get_project_404)]
+
+def get_task_or_404(task_id: int, session: SessionDep)->Task:
+    task = crud.get_task(session,task_id)
+    if task is None:
+        raise HTTPException(
+            status_code= status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
+    return task 
+
+TaskDep = Annotated[Task, Depends(get_task_or_404)]
+
+
