@@ -1,0 +1,44 @@
+services:
+  web:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://release_tracker:release_tracker@db:5432/release_tracker
+      DEBUG: "true"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY before running compose.app.yaml}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "alembic upgrade head && fastapi run"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: release_tracker
+      POSTGRES_USER: release_tracker
+      POSTGRES_PASSWORD: release_tracker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U release_tracker -d release_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
