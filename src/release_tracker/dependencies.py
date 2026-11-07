@@ -3,8 +3,10 @@ from typing import Annotated
 from fastapi import Depends, HTTPException,status
 from sqlmodel import Session 
 from .database import get_session 
+from .security import get_current_user
 from . import crud 
-from .models import Project, Task
+from .models import Project, Task, User
+from .security import get_current_user
 """
 
 Whenever an API endpoint needs a database session, FastAPI should automatically create or obtain one using get_session() and provide it to that endpoint.
@@ -31,8 +33,8 @@ Benefits:
 - Makes it easy to override the database during testing.
 
 """
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
 SessionDep = Annotated[Session,Depends(get_session)]
-
 def get_project_404(session:SessionDep, project_id: int)-> Project :
     project = crud.get_project(session,project_id)
     if project is None:
@@ -51,5 +53,6 @@ def get_task_or_404(task_id: int, session: SessionDep)->Task:
     return task 
 
 TaskDep = Annotated[Task, Depends(get_task_or_404)]
+
 
 

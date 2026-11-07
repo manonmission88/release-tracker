@@ -58,8 +58,8 @@ from typing import Any
 # The -> Any return type tells static type checkers not to constrain the return value.
 from fastapi import APIRouter, status, Response
 from .. import crud 
-from ..dependencies import ProjectDep, SessionDep
-from ..models import ProjectRead, ProjectUpdate,ProjectCreate
+from ..dependencies import CurrentUserDep, ProjectDep, SessionDep
+from ..models import ProjectRead, ProjectUpdate, ProjectCreate
 
 router = APIRouter(prefix = "/projects", tags=["projects"])
 
@@ -78,9 +78,11 @@ def get_project(project: ProjectDep) -> Any:
 @router.post(
     "/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED
 )
-def create_project(payload: ProjectCreate, session: SessionDep) -> Any:
+def create_project(
+    payload: ProjectCreate, session: SessionDep, user: CurrentUserDep
+) -> Any:
     # TODO: Call `crud.create_project` with the session and payload, and return the result.
-    return crud.create_project(session, payload)
+    return crud.create_project(session, payload, user)
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
@@ -103,8 +105,9 @@ def update_project(
 # ProjectDep retrieves the existing project using the path parameter.
 # SessionDep provides the session needed to delete and commit.
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project(project: ProjectDep, session: SessionDep) -> Response:
+def delete_project(
+    project: ProjectDep, session: SessionDep, user: CurrentUserDep
+) -> Response:
     # TODO: Call `crud.delete_project` with the session and the project, then return a `Response` with `status_code=status.HTTP_204_NO_CONTENT`.
-    crud.delete_project(session, project)
+    crud.delete_project(session, project, user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

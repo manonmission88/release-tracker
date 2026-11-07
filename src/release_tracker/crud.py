@@ -1,8 +1,9 @@
 from sqlmodel import Session, select
 from datetime import UTC,datetime
-from .models import Project, ProjectCreate, ProjectUpdate, Task,TaskPriority, TaskStatus, TaskCreate
+from .models import Project, ProjectCreate, ProjectUpdate, Task,TaskPriority, TaskStatus, TaskCreate,User
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
+from .security import get_password_hash
 
 # this refactor how we communicate with the databases 
 def slugify(value: str) -> str:
@@ -24,7 +25,7 @@ def get_project(session: Session, project_id: int) -> Project | None:
     return project
 
 
-def create_project(session: Session, payload: ProjectCreate) -> Project | None:
+def create_project(session: Session, payload: ProjectCreate, user: User) -> Project | None:
     # TODO: Build a Project from the payload, derive its slug, add/commit/refresh, return it.
     project= Project.model_validate(payload,update ={"slug" : slugify(payload.name)})
     try:
@@ -51,7 +52,7 @@ def update_project(
     return project 
 
 
-def delete_project(session: Session, project: Project) -> None:
+def delete_project(session: Session, project: Project, user: User) -> None:
     session.delete(project)
     session.commit()
 
@@ -93,3 +94,19 @@ def create_task(session: Session, project_id: int, payload: TaskCreate)->Task:
 def delete_task(session, task):
     session.delete(task)
     session.commit()
+
+def create_user(session: Session, *, email: str, password: str, is_active: bool = True)->User:
+    user = User(email=email.lower(),
+                hashed_password=get_password_hash(password),
+                is_active = is_active)
+    session.add(user)
+    session.commit()
+    return user 
+    
+
+def get_user_by_email(session, email_str: str)-> User:
+    user = select(User).where(User.email == email_str)
+    return session.exec(user).first()
+    
+    
+    

@@ -29,14 +29,16 @@ def test_list_tasks_filter_by_status(
     assert titles == ["Done task"]
 
 def test_list_tasks_filter_by_project_slug(
-    client: TestClient, sample_project_id: int
+    client: TestClient, sample_project_id: int, auth_headers: dict[str, str]
 ):
     # TODO: Create a second project, post one task to each project, then
     # GET /tasks?project_slug=<second-project-slug> and assert that only
     # the second project's task comes back.
     other = client.post(
         "/projects/",
-        json = {"name": "Other Project", "decription": "unrelated"}).json(
+        json={"name": "Other Project", "description": "unrelated"},
+        headers=auth_headers,
+    ).json(
     )
     client.post(f"/projects/{sample_project_id}/tasks", json = {"title": "first task"})
     client.post(

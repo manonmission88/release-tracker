@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from fastapi import FastAPI,  status,Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
-from .routers import projects,tasks
+from .routers import auth, projects, tasks
 import logging
 from .config import configure_logging, get_settings
 import time 
@@ -36,6 +36,7 @@ app = FastAPI(
 
 app.include_router(projects.router)
 app.include_router(tasks.router)
+app.include_router(auth.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
