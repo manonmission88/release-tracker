@@ -1,4 +1,3 @@
-
 from sqlmodel import Session
 
 from release_tracker.database import get_engine
@@ -16,25 +15,15 @@ def seed() -> None:
     # Step 1: Create a database session using the engine.
     # The context manager closes the session afterward.
     with Session(get_engine()) as session:
-
         # Step 2: Create three Project model instances.
         # At this point, they are Python objects,
         # not yet saved in the database.
 
-        frontend = Project(
-            name="Frontend Redesign",
-            slug="frontend-redesign"
-        )
+        frontend = Project(name="Frontend Redesign", slug="frontend-redesign")
 
-        api = Project(
-            name="Payments API",
-            slug="payments-api"
-        )
+        api = Project(name="Payments API", slug="payments-api")
 
-        dashboard = Project(
-            name="Internal Dashboard",
-            slug="internal-dashboard"
-        )
+        dashboard = Project(name="Internal Dashboard", slug="internal-dashboard")
 
         # Step 3: Add the objects to the session.
         # This marks them for insertion.

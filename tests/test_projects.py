@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from release_tracker.main import app
 
 # Set up the test client.
@@ -24,16 +25,17 @@ def test_create_project(client: TestClient, auth_headers: dict[str, str]):
     ## The database normally generates the project ID.
     response = client.post(
         "/projects",
-        json={"name": "Middleware Apiiiii", "description": "Middleware APII Project"},
+        json={
+            "name": "Middleware Apiiiii",
+            "description": "Middleware APII Project",
+        },
         headers=auth_headers,
     )
     print("Response", response.json())
     assert response.status_code == 201
 
 
-def test_alredy_existed_create_project(
-    client: TestClient, auth_headers: dict[str, str]
-):
+def test_alredy_existed_create_project(client: TestClient, auth_headers: dict[str, str]):
     payload = {
         "name": "Middleware Apiiiii",
         "description": "Middleware APII Project",
@@ -49,9 +51,7 @@ def test_alredy_existed_create_project(
     assert response.status_code == 409
 
 
-def test_delete_project(
-    client: TestClient, auth_headers: dict[str, str]
-):
+def test_delete_project(client: TestClient, auth_headers: dict[str, str]):
     client.post(
         "/auth/register",
         json={"email": "delete@example.com", "password": "test@99"},
@@ -64,8 +64,7 @@ def test_delete_project(
             "password": "test@99",
         },
     )
-    token = token_response.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
+    token_response.json()["access_token"]
 
     created = client.post(
         "/projects/",
@@ -89,8 +88,6 @@ def test_delete_project(
     assert response.content == b""
 
     # Confirm the project no longer exists.
-    response = client.get(
-        f"/projects/{project_id}"
-    )
+    response = client.get(f"/projects/{project_id}")
 
     assert response.status_code == 404

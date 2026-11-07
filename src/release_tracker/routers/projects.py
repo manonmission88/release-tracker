@@ -1,4 +1,3 @@
-
 """
 APIRouter — PROJECT ROUTES
 
@@ -38,30 +37,31 @@ Main Benefit:
 
     Refactoring to APIRouter should not change existing
     endpoint behavior, response models, or HTTP status codes.
-    
+
 """
-
-
 
 """
 Putting all our endpoints in main.py works fine for a small project. However, as our application grows to dozens or hundreds of endpoints, main.py becomes hard to navigate and maintain.
 
-FastAPI provides a tool called APIRouter to help us split our application into smaller, focused modules. 
+FastAPI provides a tool called APIRouter to help us split our application into smaller, focused modules.
 An APIRouter is essentially a "mini-FastAPI" app that we can merge into the main application.
 
 
 
 
 """
-# we can ignore the type check 
-from typing import Any 
-# The -> Any return type tells static type checkers not to constrain the return value.
-from fastapi import APIRouter, status, Response
-from .. import crud 
-from ..dependencies import CurrentUserDep, ProjectDep, SessionDep
-from ..models import ProjectRead, ProjectUpdate, ProjectCreate
+# we can ignore the type check
+from typing import Any
 
-router = APIRouter(prefix = "/projects", tags=["projects"])
+# The -> Any return type tells static type checkers not to constrain the return value.
+from fastapi import APIRouter, Response, status
+
+from .. import crud
+from ..dependencies import CurrentUserDep, ProjectDep, SessionDep
+from ..models import ProjectCreate, ProjectRead, ProjectUpdate
+
+router = APIRouter(prefix="/projects", tags=["projects"])
+
 
 # SessionDep is required because listing projects needs database access.
 # ProjectDep would be incorrect because this endpoint has no project_id.
@@ -75,20 +75,14 @@ def get_project(project: ProjectDep) -> Any:
     return project
 
 
-@router.post(
-    "/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED
-)
-def create_project(
-    payload: ProjectCreate, session: SessionDep, user: CurrentUserDep
-) -> Any:
+@router.post("/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+def create_project(payload: ProjectCreate, session: SessionDep, user: CurrentUserDep) -> Any:
     # TODO: Call `crud.create_project` with the session and payload, and return the result.
     return crud.create_project(session, payload, user)
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
-def update_project(
-    project: ProjectDep, payload: ProjectUpdate, session: SessionDep
-) -> Any:
+def update_project(project: ProjectDep, payload: ProjectUpdate, session: SessionDep) -> Any:
     # Step 1: Fetch the existing project.
     # ProjectDep already fetched the project through get_project_404().
     project = crud.update_project(session, project, payload)
@@ -97,7 +91,7 @@ def update_project(
     # This check is handled by ProjectDep before the route executes.
 
     # Step 3: Extract ONLY fields supplied by client.
-    #exclude_unset=True ensures we only update fields the client explicitly sent in their request.
+    # exclude_unset=True ensures we only update fields the client explicitly sent in their request.
     # The actual extraction and update are performed inside crud.update_project().
     return project
 
@@ -105,9 +99,7 @@ def update_project(
 # ProjectDep retrieves the existing project using the path parameter.
 # SessionDep provides the session needed to delete and commit.
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project(
-    project: ProjectDep, session: SessionDep, user: CurrentUserDep
-) -> Response:
+def delete_project(project: ProjectDep, session: SessionDep, user: CurrentUserDep) -> Response:
     # TODO: Call `crud.delete_project` with the session and the project, then return a `Response` with `status_code=status.HTTP_204_NO_CONTENT`.
     crud.delete_project(session, project, user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,14 +1,12 @@
 import pytest
-
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from release_tracker.main import app
 from release_tracker.database import get_session
-from release_tracker.models import Project
+from release_tracker.main import app
 
-#mock database 
+# mock database
 """
 Code	Purpose
 @pytest.fixture	Creates reusable test setup
@@ -19,9 +17,10 @@ dependency_overrides	Makes FastAPI use the test session
 yield	Provides the fixture and enables cleanup afterward
 
 """
-#The fixture in tests/conftest.py gives every test its own clean SQLite instance, 
+# The fixture in tests/conftest.py gives every test its own clean SQLite instance,
 # an isolated Session, a TestClient wired to override the production session,
 # and a few of pre-populated rows for tests that need a starting state.
+
 
 @pytest.fixture
 def session():
@@ -29,7 +28,7 @@ def session():
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        poolclass=StaticPool,
     )
 
     # Create the database tables.
@@ -47,7 +46,7 @@ def client(session):
     def override_get_session():
         yield session
 
-    app.dependency_overrides[get_session] = override_get_session # just duplicate the session 
+    app.dependency_overrides[get_session] = override_get_session  # just duplicate the session
     try:
         with TestClient(app) as test_client:
             yield test_client
@@ -78,11 +77,9 @@ def auth_headers(client: TestClient) -> dict[str, str]:
     return {"Authorization": "Bear" + "er " + token}
 
 
-#boiler plate code 
+# boiler plate code
 @pytest.fixture()
-def sample_project_id(
-    client: TestClient, auth_headers: dict[str, str]
-) -> int:
+def sample_project_id(client: TestClient, auth_headers: dict[str, str]) -> int:
     response = client.post(
         "/projects/",
         json={

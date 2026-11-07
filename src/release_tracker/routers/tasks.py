@@ -1,4 +1,3 @@
-
 """
 Task API Router
 
@@ -27,43 +26,60 @@ Responsibilities:
 
 APIRouter keeps task endpoints organized and separate from main.py.
 """
+
 from typing import Annotated, Any
-from fastapi import APIRouter, status, Response, Query
-from .. import crud 
-from .. dependencies import ProjectDep, SessionDep, TaskDep 
-from ..models import TaskCreate, Task, TaskRead, TaskUpdate, TaskStatus, TaskPriority
 
-router  = APIRouter(tags= ["tasks"])
+from fastapi import APIRouter, Query, Response, status
 
-# get task 
+from .. import crud
+from ..dependencies import ProjectDep, SessionDep, TaskDep
+from ..models import (
+    TaskCreate,
+    TaskPriority,
+    TaskRead,
+    TaskStatus,
+)
+
+router = APIRouter(tags=["tasks"])
+
+
+# get task
 @router.get("/tasks/{task_id}", response_model=TaskRead)
-def get_task(session: SessionDep,task: TaskDep)->Any:
+def get_task(session: SessionDep, task: TaskDep) -> Any:
     return task
 
 
-#list all tasks 
+# list all tasks
 @router.get("/tasks/", response_model=list[TaskRead])
-def list_tasks(session: SessionDep,
-               project_id: int | None = None, 
-               project_slug: str | None = None,
-               task_status: Annotated[TaskStatus | None, Query(alias="status")] = None,
-               task_priority: Annotated[TaskPriority | None, Query(alias="property")] = None,
-               overdue_only: bool = False
-               )->Any:
-    return crud.list_tasks(session,
-                           project_id=project_id,
-                           project_slug = project_slug,
-                           task_status=task_status,
-                           task_priority=task_priority,
-                           overdue_only=overdue_only)
-    
-    
-@router.post("/projects/{project_id}/tasks/", response_model=TaskRead, status_code = status.HTTP_201_CREATED)
-def create_task(project: ProjectDep,payload: TaskCreate, session: SessionDep):
-    return crud.create_task(session,project.id, payload)
+def list_tasks(
+    session: SessionDep,
+    project_id: int | None = None,
+    project_slug: str | None = None,
+    task_status: Annotated[TaskStatus | None, Query(alias="status")] = None,
+    task_priority: Annotated[TaskPriority | None, Query(alias="property")] = None,
+    overdue_only: bool = False,
+) -> Any:
+    return crud.list_tasks(
+        session,
+        project_id=project_id,
+        project_slug=project_slug,
+        task_status=task_status,
+        task_priority=task_priority,
+        overdue_only=overdue_only,
+    )
 
-# list of takss 
-@router.delete('/tasks/{task_id}', status_code=status.HTTP_204_NO_CONTENT)
+
+@router.post(
+    "/projects/{project_id}/tasks/",
+    response_model=TaskRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_task(project: ProjectDep, payload: TaskCreate, session: SessionDep):
+    return crud.create_task(session, project.id, payload)
+
+
+# list of takss
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(session, task):
-    crud.delete_task(session,task)
+    crud.delete_task(session, task)
     return Response(status_code=status.HTTP_404_NOT_FOUND)

@@ -1,7 +1,7 @@
 """description
 
 Revision ID: 0c62ca643533
-Revises: 
+Revises:
 Create Date: 2026-10-30 18:46:05.963910
 
 """

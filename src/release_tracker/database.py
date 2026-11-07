@@ -1,4 +1,3 @@
-
 from collections.abc import Generator
 from functools import lru_cache
 
@@ -8,7 +7,7 @@ from sqlmodel import Session, create_engine
 from .config import get_settings
 
 
-#database connection happens here 
+# database connection happens here
 # Create and reuse one database engine.
 @lru_cache
 def get_engine() -> Engine:
@@ -19,8 +18,9 @@ def get_engine() -> Engine:
     # It does not automatically create database tables.
     return create_engine(get_settings().database_url)
 
+
 """
-When FastAPI needs to resolve this dependency, it executes the code up until the yield statement. 
+When FastAPI needs to resolve this dependency, it executes the code up until the yield statement.
 The with Session(get_engine()) as session: context manager opens a database connection and creates a session, which is then yielded to your route handler.
 
 Once your route handler finishes and returns a response to the user, FastAPI resumes execution of the generator after the yield. At that point, the context manager exits, which automatically closes the database session.
@@ -33,7 +33,6 @@ def get_session() -> Generator[Session, None, None]:
 
     # Open a session using the shared engine.
     with Session(get_engine()) as session:
-
         # Give the actual session object to FastAPI.
         yield session
 

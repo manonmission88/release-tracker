@@ -27,6 +27,24 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "coverage>=7.17.2",
+    "mypy>=2.4.1",
     "pytest>=9.2.0",
     "ruff>=0.17.4",
 ]
+
+[tool.mypy]
+python_version = "3.14"
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+exclude = [
+    "^tests/",
+    "^alembic/versions/",
+]
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+ignore = ["E501"]
